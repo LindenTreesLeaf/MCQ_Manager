@@ -1,1 +1,1 @@
-{"nick": "user_test", "password": "1234", "email": "user@test.fr", "scores": [["mcq1", 18]]}
+{"user_test": {"password": "1234", "email": "user@test.fr", "scores": [["mcq1", 18]]}}
