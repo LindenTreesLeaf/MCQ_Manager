@@ -10,7 +10,6 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONObject;
 
-import projet_info0502.DBManager.DBManager;
 import projet_info0502.Threads.AuthentificationThrd;
 import projet_info0502.Users.ServerManager;
 

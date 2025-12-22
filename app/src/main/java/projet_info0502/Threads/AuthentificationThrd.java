@@ -17,9 +17,7 @@ public class AuthentificationThrd implements Runnable{
     private ServerManager sm;
     private MqttClient client;
 
-    private final String HOST = "tcp://10.11.33.106:1883";
     private String TOPIC;
-    private final String CLIENT_ID = "MCQServer";
 
     public AuthentificationThrd(MqttClient c, JSONObject r, ServerManager sm){
         this.client = c;
