@@ -1,37 +1,95 @@
 package projet_info0502.DBManager;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
+import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.security.SecureRandom;
+import java.util.Base64;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
-import projet_info0502.Exceptions.MCQManagerException;
-
 public class DBManager {
-    public JSONObject getQCM(int id) throws IOException{
-        if(id > 0){
-            InputStream is = getClass().getClassLoader().getResourceAsStream("database/mcq.txt");
-            if (is == null) {
-                throw new FileNotFoundException("mcq.txt not found");
-            }
+    public static final Path PATH_MCQ = Paths.get("database", "mcq.txt");
+    public static final Path PATH_USERS = Paths.get("database", "users.txt");
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-            String line = "";
-            for(int i = 0; i < id; i++) {
-                if((line = reader.readLine()) == null){
-                    throw new MCQManagerException("Multiple-choice questionnaire not found.", -2);
-                }
-            }
+    public static boolean MCQExists(String id)throws IOException{
+        boolean res = true;
 
-            reader.close();
-            is.close();
-            return new JSONObject(line);
+        BufferedReader reader = Files.newBufferedReader(PATH_MCQ, StandardCharsets.UTF_8);
+        String line = reader.readLine();
+        
+        JSONObject mcq = new JSONObject(line);
+        try{
+            mcq.getJSONObject(id);
+        } catch (JSONException e){
+            res = false;
         }
-        else
-            throw new MCQManagerException("Invalid ID to fetch QCM.", -1);
+
+        reader.close();
+        return res;
+    }
+    public static JSONObject getMCQ(String id) throws IOException{
+        BufferedReader reader = Files.newBufferedReader(PATH_MCQ, StandardCharsets.UTF_8);
+        String line = reader.readLine();
+        JSONObject mcq = new JSONObject(line);
+
+        reader.close();
+        return mcq.getJSONObject(id);
+    }
+
+    public static String generateSessionId() {
+        final SecureRandom secureRandom = new SecureRandom();
+        final Base64.Encoder base64Encoder = Base64.getUrlEncoder();
+
+        byte[] randomBytes = new byte[24];
+        secureRandom.nextBytes(randomBytes);
+
+        return base64Encoder.encodeToString(randomBytes);
+    }
+    public static boolean authenticate(String nick, String password) throws IOException {
+        boolean res = true;
+
+        BufferedReader reader = Files.newBufferedReader(PATH_USERS, StandardCharsets.UTF_8);
+        String line = reader.readLine();
+        JSONObject users = new JSONObject(line);
+        try{
+            JSONObject u = users.getJSONObject(nick);
+            if(!password.equals(u.getString("password")))
+                res = false;
+        } catch(JSONException e){
+            res = false;
+        }
+
+        reader.close();
+        return res;
+    }
+    public static synchronized void registerNewUser(String nick, String password, String email, projet_info0502.Users.Status status) throws IOException{
+        JSONObject newUser = new JSONObject().put("password", password).put("email", email).put("scores", new JSONArray()).put("status", status);
+        BufferedReader reader = Files.newBufferedReader(PATH_USERS, StandardCharsets.UTF_8);
+        String line = reader.readLine();
+        JSONObject users = new JSONObject(line);
+        users.put(nick, newUser);
+
+        BufferedWriter writer = Files.newBufferedWriter(PATH_USERS, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        writer.write(users.toString());
+        writer.newLine();
+
+        writer.close();
+        reader.close();
+    }
+    public static JSONObject getUserJson(String nick) throws IOException{
+        BufferedReader reader = Files.newBufferedReader(PATH_USERS, StandardCharsets.UTF_8);
+        String line = reader.readLine();
+        JSONObject users = new JSONObject(line);
+
+        reader.close();
+        return users.getJSONObject(nick);
     }
 }
