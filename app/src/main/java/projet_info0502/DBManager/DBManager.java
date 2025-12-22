@@ -14,7 +14,7 @@ import projet_info0502.Exceptions.MCQManagerException;
 public class DBManager {
     public JSONObject getQCM(int id) throws IOException{
         if(id > 0){
-            InputStream is = getClass().getClassLoader().getResourceAsStream("bdd/mcq.txt");
+            InputStream is = getClass().getClassLoader().getResourceAsStream("database/mcq.txt");
             if (is == null) {
                 throw new FileNotFoundException("mcq.txt not found");
             }
@@ -26,7 +26,7 @@ public class DBManager {
                     throw new MCQManagerException("Multiple-choice questionnaire not found.", -2);
                 }
             }
-            
+
             reader.close();
             is.close();
             return new JSONObject(line);
