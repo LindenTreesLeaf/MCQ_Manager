@@ -21,19 +21,14 @@ public class DBManagerTest {
 
     @Test
     public void testAuthenticate() throws IOException {
+
     DBManager.registerNewUser("bob", "secret123", "bob@mail.com", Status.TEACHER);
-
-    JSONObject paramsSuccess = new JSONObject().put("nick", "bob").put("password", "secret123");
-    JSONObject resultSuccess = DBManager.authenticate(paramsSuccess);
-    assertEquals("OK", resultSuccess.getString("status"), "L'authentification va réussir avec le bon mot de passe");
-
+    boolean resultSuccess = DBManager.authenticate("bob", "secret123");
+    assertTrue(resultSuccess, "L'authentification va réussir avec le bon mot de passe");
 
     DBManager.registerNewUser("Thomas", "good123", "Thomas@mail.com", Status.STUDENT);
-
-    JSONObject paramsFail = new JSONObject().put("nick", "Thomas").put("password", "bad123");
-    JSONObject resultFail = DBManager.authenticate(paramsFail);
-
-    assertEquals("KO", resultFail.getString("status"), "L'authentification va échouer avec un mauvais mot de passe");
+    boolean resultFail = DBManager.authenticate("Thomas", "bad123");
+    assertFalse(resultFail, "L'authentification va échouer avec un mauvais mot de passe");
 }
 
 
