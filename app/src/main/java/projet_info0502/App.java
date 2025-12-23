@@ -42,8 +42,12 @@ public class App implements MqttCallback{
                 Thread authThrd = new Thread(new AuthentificationThrd(client, request, sm));
                 authThrd.start();
                 break;
+            case "Register":
+                Thread regThrd = new Thread(new RegisterThrd(client, request, sm));
+                regThrd.start();
+                break;
             default:
-                JSONObject answer = new JSONObject().put("status", "KO").put("error", "Service requested not recognised. Service requested: " + request.getString("service") + "; allowed services: \"Authentification\"");
+                JSONObject answer = new JSONObject().put("status", "KO").put("error", "Service requested not recognised. Service requested: " + request.getString("service") + "; allowed services: \"Authentification\", \"Register\"");
                 String messageText = answer.toString();
                 MqttMessage m = new MqttMessage(messageText.getBytes());
                 client.publish(TOPIC, m);
