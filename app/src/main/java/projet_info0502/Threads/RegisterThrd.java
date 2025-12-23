@@ -68,7 +68,3 @@ public class RegisterThrd implements Runnable{
         }
     }
 }
-
-   
-
-
