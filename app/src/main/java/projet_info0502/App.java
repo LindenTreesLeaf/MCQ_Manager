@@ -11,6 +11,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONObject;
 
 import projet_info0502.Threads.AuthentificationThrd;
+import projet_info0502.Threads.RegisterThrd;
 import projet_info0502.Users.ServerManager;
 
 public class App implements MqttCallback{
