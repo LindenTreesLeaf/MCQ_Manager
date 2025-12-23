@@ -42,6 +42,31 @@ public class App implements MqttCallback{
         scan.close();
     }
 
+    public static void register(){
+        Scanner scan = new Scanner(System.in);
+
+        try {
+            System.out.print("Registration : \nEntrer nickname : ");
+            String nick = scan.nextLine();
+            System.out.print("Entrer password : ");
+            String password = scan.nextLine();
+            System.out.print("Entrer email : ");
+            String email = scan.nextLine();
+            System.out.print("Entrer status (STUDENT/TEACHER) : ");
+            String status = scan.nextLine();
+
+            JSONObject request = new JSONObject().put("service", "Register").put("params", new JSONObject().put("topic", TOPIC_CLIENT).put("nick", nick).put("password", password).put("email", email).put("status", status));
+
+            String messageText = request.toString();
+            MqttMessage message = new MqttMessage(messageText.getBytes());
+            client.publish(TOPIC_MCQMANAGER, message);
+            waitAnswerAuth = true;
+
+        } catch (MqttException e){
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) {
         try{
             client = new MqttClient(HOST, CLIENT_ID);
@@ -55,7 +80,7 @@ public class App implements MqttCallback{
             while(true){
                 if(!waitAnswerAuth){
                     if(sessionId.equals(""))
-                        System.out.println("Que faire ? 1: Authentification");
+                        System.out.println("Que faire ? 1: Authentification, 2: Register");
                     else
                         System.out.println("Que faire ? 1: Deconnexion");
 
@@ -69,6 +94,10 @@ public class App implements MqttCallback{
                             if(sessionId.equals(""))
                                 authenticate();
                             else{}
+                            break;
+                        case 2:
+                            if(sessionId.equals(""))
+                                register();
                             break;
                     }
                 }
@@ -88,10 +117,10 @@ public class App implements MqttCallback{
             if(status.equals("OK")){
                 JSONObject params = answer.getJSONObject("params");
                 sessionId = params.getString("sessionId");
-                System.out.println("Authentification réussie. ID de session : " + sessionId);
+                System.out.println("Authentification et Registeration réussie. ID de session : " + sessionId);
                 waitAnswerAuth = false;
             }else{
-                System.out.println("Authentification échoué.");
+                System.out.println("Authentification et Registration échoué.");
                 waitAnswerAuth = false;
             }
         }
