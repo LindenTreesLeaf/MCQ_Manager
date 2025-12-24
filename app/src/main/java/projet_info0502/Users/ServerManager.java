@@ -2,6 +2,8 @@ package projet_info0502.Users;
 
 import java.util.Vector;
 
+import projet_info0502.Exceptions.MCQManagerException;
+
 public class ServerManager {
     private Vector<User> users;
 
@@ -11,6 +13,24 @@ public class ServerManager {
 
     public void addUser(User u){
         this.users.add(u);
+    }
+    public User checkAuth(String sessionId){
+        if(this.users.size() > 0){
+            int i = 0;
+            User res = this.users.get(i);
+            while(!res.getSessionId().equals(sessionId) && i < this.users.size()){
+                i++;
+            }
+            if(res.getSessionId().equals(sessionId))
+                return res;
+            else
+                return null;
+        }
+        else
+            throw new MCQManagerException("Trying to get a User when none is connected.");
+    }
+    public void removeUser(User u){
+        this.users.remove(u);
     }
 
     @Override

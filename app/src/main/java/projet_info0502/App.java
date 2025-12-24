@@ -12,6 +12,7 @@ import org.json.JSONObject;
 
 import projet_info0502.Exceptions.MCQManagerException;
 import projet_info0502.Threads.AuthentificationThrd;
+import projet_info0502.Threads.DisconnectionThrd;
 import projet_info0502.Threads.RegisterThrd;
 import projet_info0502.Users.ServerManager;
 
@@ -28,7 +29,7 @@ public class App implements MqttCallback{
             HOST = args[0];
         else
             throw new MCQManagerException("Incorrect number of argument passed.");
-        
+
         try {
             client = new MqttClient(HOST, CLIENT_ID);
             MqttConnectOptions options = new MqttConnectOptions();
@@ -53,14 +54,18 @@ public class App implements MqttCallback{
                 Thread regThrd = new Thread(new RegisterThrd(client, request, sm));
                 regThrd.start();
                 break;
+            case "Disconnection":
+                Thread discThrd = new Thread(new DisconnectionThrd(client, request, sm));
+                discThrd.start();
+                break;
             default:
-                JSONObject answer = new JSONObject().put("status", "KO").put("error", "Service requested not recognised. Service requested: " + request.getString("service") + "; allowed services: \"Authentification\", \"Register\"");
+                JSONObject answer = new JSONObject().put("status", "KO").put("error", "Service requested not recognised. Service requested: " + request.getString("service") + "; allowed services: \"Authentification\", \"Register\", \"Disconnection\"");
                 String messageText = answer.toString();
                 MqttMessage m = new MqttMessage(messageText.getBytes());
                 client.publish(TOPIC, m);
                 break;
         }
-        //tests -- a supprimer
+        //debug -- a supprimer
         Thread.sleep(2500);
         System.out.println(sm);
     }

@@ -66,7 +66,7 @@ public class RegisterThrd implements Runnable{
                         DBManager.registerNewUser(nick, password, email, s);
 
                         String sId = DBManager.generateSessionId(); this.sessionId = sId;
-                        User u = new User(nick, this.sessionId, Status.getStatus(statusStr));
+                        User u = new User(this.sessionId, Status.getStatus(statusStr));
                         sm.addUser(u);
 
                         answer.put("status", "OK");
