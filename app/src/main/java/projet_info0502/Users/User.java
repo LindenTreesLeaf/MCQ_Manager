@@ -8,11 +8,13 @@ import projet_info0502.DBManager.DBManager;
 import projet_info0502.Exceptions.MCQManagerException;
 
 public class User {
+    private String nick;
     private String sessionId;
     private JSONObject mcq;
     private Status status;
 
-    public User(String sId, Status s){
+    public User(String n, String sId, Status s){
+        this.nick = new String(n);
         this.sessionId = sId;
         this.status = s;
         if(this.status == Status.STUDENT){
@@ -48,6 +50,6 @@ public class User {
 
     @Override
     public String toString(){
-        return "User: sessionId: " + this.sessionId + ", status: " + this.status;
+        return "User: " + this.nick + " -- sessionId: " + this.sessionId + ", status: " + this.status;
     }
 }

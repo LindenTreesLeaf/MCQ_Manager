@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import projet_info0502.DBManager.DBManager;
@@ -44,16 +45,34 @@ public class RegisterThrd implements Runnable{
                 try {
                     DBManager.getUserJson(nick);
                     answer.put("status", "KO").put("error", "Nickname est déjà utuilisé.");
-                } catch (IOException e){
+                } catch (JSONException e){
+                    boolean statusOk = true;
 
-                    DBManager.registerNewUser(nick, password, email, statusStr.equals("TEACHER") ? Status.TEACHER : Status.STUDENT);
+                    Status s = Status.TEACHER;
+                    if(statusStr.equals("TEACHER"))
+                        s = Status.TEACHER;
+                    else{
+                        if(statusStr.equals("STUDENT"))
+                            s = Status.STUDENT;
+                        else{
+                            if(statusStr.equals("MIX"))
+                                s = Status.MIX;
+                            else
+                                statusOk = false;
+                        }
+                    }
 
-                    String sId = DBManager.generateSessionId(); this.sessionId = sId;
-                    User u = new User(this.sessionId, Status.getStatus(statusStr));
-                    sm.addUser(u);
+                    if(statusOk){
+                        DBManager.registerNewUser(nick, password, email, s);
 
-                    answer.put("status", "OK");
-                    answer.put("params", new JSONObject().put("sessionId", sId).put("nick", nick).put("role", statusStr));
+                        String sId = DBManager.generateSessionId(); this.sessionId = sId;
+                        User u = new User(nick, this.sessionId, Status.getStatus(statusStr));
+                        sm.addUser(u);
+
+                        answer.put("status", "OK");
+                        answer.put("params", new JSONObject().put("sessionId", sId).put("nick", nick).put("role", statusStr));
+                    } else
+                        answer.put("staus", "KO").put("error", "Status sent does not exist. Status sent: " + statusStr + ". Status allowed: \"TEACHER\", \"STUDENT\", \"MIX\"");
                 }
             } catch (IOException e){
                 answer.put("status", "KO").put("error", "Erreur serveur : " + e.getMessage());
