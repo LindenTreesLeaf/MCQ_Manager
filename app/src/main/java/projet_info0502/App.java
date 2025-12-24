@@ -20,11 +20,11 @@ public class App implements MqttCallback{
     public static final String CLIENT_ID = "student1";
 
     private static String sessionId = "";
-    private static boolean waitAnswerAuth = false;
+    private static int choice;
+    private static Scanner scan;
+    private static volatile boolean waitAnswerAuth = false;
 
     public static void authenticate(){
-        Scanner scan = new Scanner(System.in);
-
         try {
             System.out.print("Authentification :\nEntrer nickname : ");
             String nick = scan.nextLine();
@@ -36,17 +36,12 @@ public class App implements MqttCallback{
             String messageText = request.toString();
             MqttMessage message = new MqttMessage(messageText.getBytes());
             client.publish(TOPIC_MCQMANAGER, message);
-            waitAnswerAuth = true;
         } catch (MqttException e) {
             e.printStackTrace();
         }
-
-        scan.close();
     }
 
     public static void register(){
-        Scanner scan = new Scanner(System.in);
-
         try {
             System.out.print("Registration : \nEntrer nickname: ");
             String nick = scan.nextLine();
@@ -62,13 +57,10 @@ public class App implements MqttCallback{
             String messageText = request.toString();
             MqttMessage message = new MqttMessage(messageText.getBytes());
             client.publish(TOPIC_MCQMANAGER, message);
-            waitAnswerAuth = true;
 
         } catch (MqttException e){
             e.printStackTrace();
         }
-
-        scan.close();
     }
 
     public static void main(String[] args) {
@@ -85,7 +77,7 @@ public class App implements MqttCallback{
             client.connect(options);
             client.subscribe(TOPIC_CLIENT);
 
-            Scanner scan = new Scanner(System.in);
+            scan = new Scanner(System.in);
             while(true){
                 if(!waitAnswerAuth){
                     if(sessionId.equals(""))
@@ -93,25 +85,27 @@ public class App implements MqttCallback{
                     else
                         System.out.println("Que faire ? 1: Deconnexion");
 
-                    int choice;
                     do{
                         choice = Integer.parseInt(scan.nextLine());
-                    }while(choice < 0 && choice > 1);
+                    }while(choice < 0 || choice > 2);
 
                     switch(choice){
                         case 1:
-                            if(sessionId.equals(""))
+                            if(sessionId.equals("")){
+                                waitAnswerAuth = true;
                                 authenticate();
-                            else{}
+                            }
+                            else{
+                                //gestion déconnexion
+                            }
                             break;
                         case 2:
-                            if(sessionId.equals(""))
-                                register();
+                            waitAnswerAuth = true;
+                            register();
                             break;
                     }
                 }
             }
-            // scan.close();
         } catch(MqttException e) {
             e.printStackTrace();
         }
