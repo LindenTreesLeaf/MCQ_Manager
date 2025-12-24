@@ -10,19 +10,25 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONObject;
 
+import projet_info0502.Exceptions.MCQManagerException;
 import projet_info0502.Threads.AuthentificationThrd;
 import projet_info0502.Threads.RegisterThrd;
 import projet_info0502.Users.ServerManager;
 
 public class App implements MqttCallback{
     private static MqttClient client;
-    public static final String HOST = "tcp://10.11.33.106:1883";
+    public static String HOST;
     public static final String TOPIC = "MCQManager";
     public static final String CLIENT_ID = "MCQServer";
 
     private static ServerManager sm = new ServerManager();
 
     public static void main(String[] args) throws IOException{
+        if(args.length == 1)
+            HOST = args[0];
+        else
+            throw new MCQManagerException("Incorrect number of argument passed.");
+        
         try {
             client = new MqttClient(HOST, CLIENT_ID);
             MqttConnectOptions options = new MqttConnectOptions();

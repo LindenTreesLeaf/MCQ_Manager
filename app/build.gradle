@@ -27,7 +27,8 @@ dependencies {
     // https://mvnrepository.com/artifact/org.json/json
     implementation("org.json:json:20250517")
 
-    implementation group: 'org.eclipse.paho', name: 'org.eclipse.paho.client.mqttv3', version: '1.2.5'
+    // https://mvnrepository.com/artifact/org.eclipse.paho/org.eclipse.paho.client.mqttv3
+    implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
