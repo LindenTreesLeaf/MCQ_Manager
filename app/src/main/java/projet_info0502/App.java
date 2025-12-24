@@ -10,9 +10,11 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONObject;
 
+import projet_info0502.Exceptions.MCQManagerException;
+
 public class App implements MqttCallback{
     private static MqttClient client;
-    public static final String HOST = "tcp://10.11.33.106:1883";
+    public static String HOST;
     public static final String TOPIC_MCQMANAGER = "MCQManager";
     public static final String TOPIC_CLIENT = "ClientStudent1";
     public static final String CLIENT_ID = "student1";
@@ -46,13 +48,13 @@ public class App implements MqttCallback{
         Scanner scan = new Scanner(System.in);
 
         try {
-            System.out.print("Registration : \nEntrer nickname : ");
+            System.out.print("Registration : \nEntrer nickname: ");
             String nick = scan.nextLine();
-            System.out.print("Entrer password : ");
+            System.out.print("Entrer password: ");
             String password = scan.nextLine();
-            System.out.print("Entrer email : ");
+            System.out.print("Entrer email: ");
             String email = scan.nextLine();
-            System.out.print("Entrer status (STUDENT/TEACHER) : ");
+            System.out.print("Entrer status (STUDENT/TEACHER/MIX): ");
             String status = scan.nextLine();
 
             JSONObject request = new JSONObject().put("service", "Register").put("params", new JSONObject().put("topic", TOPIC_CLIENT).put("nick", nick).put("password", password).put("email", email).put("status", status));
@@ -65,9 +67,16 @@ public class App implements MqttCallback{
         } catch (MqttException e){
             e.printStackTrace();
         }
+
+        scan.close();
     }
 
     public static void main(String[] args) {
+        if(args.length == 1)
+            HOST = args[0];
+        else
+            throw new MCQManagerException("Incorrect number of argument passed. Argument needed: MQTT Server's IP address, with format \"tcp://10.11.33.106:1883\"");
+
         try{
             client = new MqttClient(HOST, CLIENT_ID);
             MqttConnectOptions options = new MqttConnectOptions();
@@ -117,10 +126,10 @@ public class App implements MqttCallback{
             if(status.equals("OK")){
                 JSONObject params = answer.getJSONObject("params");
                 sessionId = params.getString("sessionId");
-                System.out.println("Authentification et Registeration réussie. ID de session : " + sessionId);
+                System.out.println("Authentification et/ou Registeration réussie. ID de session : " + sessionId);
                 waitAnswerAuth = false;
             }else{
-                System.out.println("Authentification et Registration échoué.");
+                System.out.println("Authentification et/ou Registration échoué.");
                 waitAnswerAuth = false;
             }
         }
