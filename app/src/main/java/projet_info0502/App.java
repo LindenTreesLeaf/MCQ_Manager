@@ -22,7 +22,8 @@ public class App implements MqttCallback{
     private static String sessionId = "";
     private static int choice;
     private static Scanner scan;
-    private static volatile boolean waitAnswerAuth = false;
+    private static volatile RequestedService rs = new RequestedService("", false);
+    private static volatile boolean connected = true;
 
     public static void authenticate(){
         try {
@@ -36,6 +37,7 @@ public class App implements MqttCallback{
             String messageText = request.toString();
             MqttMessage message = new MqttMessage(messageText.getBytes());
             client.publish(TOPIC_MCQMANAGER, message);
+            rs.service = "Authenticate"; rs.waiting = true;
         } catch (MqttException e) {
             e.printStackTrace();
         }
@@ -57,8 +59,23 @@ public class App implements MqttCallback{
             String messageText = request.toString();
             MqttMessage message = new MqttMessage(messageText.getBytes());
             client.publish(TOPIC_MCQMANAGER, message);
-
+            rs.service = "Register"; rs.waiting = true;
         } catch (MqttException e){
+            e.printStackTrace();
+        }
+    }
+
+    public static void disconnection(){
+        try{
+            System.out.println("Disconnection");
+
+            JSONObject request = new JSONObject().put("service", "Disconnection").put("params", new JSONObject().put("topic", TOPIC_CLIENT).put("sessionId", sessionId));
+
+            String messageText = request.toString();
+            MqttMessage message = new MqttMessage(messageText.getBytes());
+            client.publish(TOPIC_MCQMANAGER, message);
+            rs.service = "Disconnection"; rs.waiting = true;
+        }catch (MqttException e){
             e.printStackTrace();
         }
     }
@@ -78,8 +95,8 @@ public class App implements MqttCallback{
             client.subscribe(TOPIC_CLIENT);
 
             scan = new Scanner(System.in);
-            while(true){
-                if(!waitAnswerAuth){
+            while(connected){
+                if(!rs.waiting){
                     if(sessionId.equals(""))
                         System.out.println("Que faire ? 1: Authentification, 2: Register");
                     else
@@ -87,44 +104,55 @@ public class App implements MqttCallback{
 
                     do{
                         choice = Integer.parseInt(scan.nextLine());
-                    }while(choice < 0 || choice > 2);
+                    }while(((sessionId.equals("")) && (choice < 0 || choice > 2)) || (!sessionId.equals("") && (choice < 0 || choice > 1)));
 
                     switch(choice){
                         case 1:
-                            if(sessionId.equals("")){
-                                waitAnswerAuth = true;
+                            if(sessionId.equals(""))
                                 authenticate();
-                            }
-                            else{
-                                //gestion déconnexion
-                            }
+                            else
+                                disconnection();
                             break;
                         case 2:
-                            waitAnswerAuth = true;
                             register();
                             break;
                     }
                 }
             }
+            client.disconnect();
+            client.close();
         } catch(MqttException e) {
             e.printStackTrace();
         }
+
+        scan.close();
     }
 
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
         JSONObject answer = new JSONObject(message.toString());
 
-        if(waitAnswerAuth){
+        if((rs.service.equals("Authenticate") || rs.service.equals("Register")) && rs.waiting == true){
             String status = answer.getString("status");
             if(status.equals("OK")){
                 JSONObject params = answer.getJSONObject("params");
                 sessionId = params.getString("sessionId");
                 System.out.println("Authentification et/ou Registeration réussie. ID de session : " + sessionId);
-                waitAnswerAuth = false;
+                rs.service = ""; rs.waiting = false;
             }else{
                 System.out.println("Authentification et/ou Registration échoué.");
-                waitAnswerAuth = false;
+                rs.service = ""; rs.waiting = false;
+            }
+        }
+
+        if(rs.service.equals("Disconnection") && rs.waiting == true){
+            String status = answer.getString("status");
+            if(status.equals("OK")){
+                System.out.println("Déconnexion réussie.");
+                connected = false;
+            }else{
+                System.out.println("Problème de déconnexion côté serveur. Déconnexion forcée.");
+                connected = false;
             }
         }
     }
