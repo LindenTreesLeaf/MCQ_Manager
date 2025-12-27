@@ -39,7 +39,7 @@ public class AuthentificationThrd implements Runnable{
                     answer.put("params", new JSONObject().put("sessionId", sessionId));
 
                     String userStatus = DBManager.getUserJson(params.getString("nick")).getString("status");
-                    User u = new User(sessionId, projet_info0502.Users.Status.getStatus(userStatus));
+                    User u = new User(sessionId, params.getString("nick"), projet_info0502.Users.Status.getStatus(userStatus));
                     sm.addUser(u);
                 } else{
                     answer.put("status", "KO").put("error", "Authentification IDs do not exist.");

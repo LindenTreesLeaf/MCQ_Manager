@@ -5,6 +5,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONObject;
 
+import projet_info0502.Exceptions.MCQManagerException;
 import projet_info0502.Users.ServerManager;
 import projet_info0502.Users.User;
 
@@ -43,6 +44,8 @@ public class DisconnectionThrd implements Runnable{
             this.client.publish(TOPIC, message);
         } catch (MqttException e) {
             e.printStackTrace();
+        } catch (MCQManagerException e){
+            // checkAuth renvoie une exception
         }
     }
 }

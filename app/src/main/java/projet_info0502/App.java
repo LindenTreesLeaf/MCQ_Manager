@@ -61,15 +61,15 @@ public class App implements MqttCallback{
                 discThrd.start();
                 break;
             case "MCQ":
-                Thread mcqThrd = new Thread(new MCQThrd(client, request));
+                Thread mcqThrd = new Thread(new MCQThrd(client, request, sm));
                 mcqThrd.start();
                 break;
-            case "Score":
-                Thread scoreThrd = new Thread(new ScoreThrd(client, request));
+            case "Scores":
+                Thread scoreThrd = new Thread(new ScoreThrd(client, request, sm));
                 scoreThrd.start();
                 break;
             default:
-                JSONObject answer = new JSONObject().put("status", "KO").put("error", "Service requested not recognised. Service requested: " + request.getString("service") + "; allowed services: \"Authentification\", \"Register\", \"Disconnection\"");
+                JSONObject answer = new JSONObject().put("status", "KO").put("error", "Service requested not recognised. Service requested: " + request.getString("service") + "; allowed services: \"Authentification\", \"Register\", \"Disconnection\", \"MCQ\", \"Scores\"");
                 String messageText = answer.toString();
                 MqttMessage m = new MqttMessage(messageText.getBytes());
                 client.publish(TOPIC, m);

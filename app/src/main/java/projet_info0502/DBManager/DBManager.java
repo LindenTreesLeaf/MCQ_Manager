@@ -15,6 +15,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import projet_info0502.Exceptions.MCQManagerException;
+import projet_info0502.Users.User;
+
 public class DBManager {
     public static final Path PATH_MCQ = Paths.get("database", "mcq.txt");
     public static final Path PATH_USERS = Paths.get("database", "users.txt");
@@ -42,6 +45,22 @@ public class DBManager {
 
         reader.close();
         return mcq.getJSONObject(id);
+    }
+    public static int correctMCQ(String MCQId, JSONObject answers) throws IOException{
+        if(MCQExists(MCQId)){
+            JSONObject mcq = getMCQ(MCQId);
+
+            int res = 0;
+            for(int i = 1; i <= 20; i++){
+                JSONArray propositions = mcq.getJSONObject(Integer.toString(i)).getJSONArray("propositions");
+                JSONArray choice = (JSONArray)(propositions.get(answers.getInt(Integer.toString(i))));
+                if((boolean)(choice.get(1)) == true)
+                    res++;
+            }
+
+            return res;
+        } else
+            throw new MCQManagerException("");
     }
 
     public static String generateSessionId() {
@@ -91,5 +110,8 @@ public class DBManager {
 
         reader.close();
         return users.getJSONObject(nick);
+    }
+    public static JSONObject getUserJson(User u) throws IOException{
+        return getUserJson(u.getNick());
     }
 }
