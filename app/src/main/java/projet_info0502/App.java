@@ -9,6 +9,7 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.json.JSONObject;
+import org.json.JSONArray;
 
 import projet_info0502.Exceptions.MCQManagerException;
 
@@ -24,6 +25,9 @@ public class App implements MqttCallback{
     private static Scanner scan;
     private static volatile RequestedService rs = new RequestedService("", false);
     private static volatile boolean connected = true;
+
+    private static JSONObject currentMCQ = null;
+    private static String currentQcmId = null;
 
     public static void authenticate(){
         try {
@@ -80,6 +84,57 @@ public class App implements MqttCallback{
         }
     }
 
+    public static void startMCQ(){
+        try{
+            System.out.print("Entrer l'ID du QCM (ex: mcq1) : ");
+            String qcmId = scan.nextLine();
+            currentQcmId = qcmId;
+            JSONObject req = new JSONObject().put("service", "MCQ").put("action", "START").put("sessionId", sessionId).put("qcmId", qcmId);
+            MqttMessage message = new MqttMessage(req.toString().getBytes());
+            client.publish(TOPIC_MCQMANAGER, message); 
+            
+            rs = new RequestedService("MCQ_START", true);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public static void afficherQuestions(JSONObject questions) {
+        for (String key : questions.keySet()) {
+            JSONObject q = questions.getJSONObject(key);
+            System.out.println("Question " + key + ": " + q.getString("question"));
+
+            JSONArray props = q.getJSONArray("propositions");
+            for (int i = 0; i < props.length(); i++) {
+                JSONArray p = props.getJSONArray(i);
+                System.out.println("  " + (i+1) + ". " + p.getString(0));
+            }
+            System.out.println();
+        }
+    }
+
+    public static void sendAllAnswers() {
+        try {
+            JSONObject answers = new JSONObject();
+            for (String key : currentMCQ.keySet()){
+                System.out.print("Réponse à la question " + key + " : ");
+                int rep = Integer.parseInt(scan.nextLine());
+                answers.put(key, rep);
+            }
+            JSONObject req = new JSONObject().put("service", "MCQ").put("action", "ANSWER_ALL").put("sessionId", sessionId).put("qcmId", currentQcmId).put("answers", answers);
+            MqttMessage message =  new MqttMessage(req.toString().getBytes());
+            client.publish(TOPIC_MCQMANAGER, message);
+            
+            rs = new RequestedService("SCORE", true);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
+
+
+
+
     public static void main(String[] args) {
         if(args.length == 1)
             HOST = args[0];
@@ -100,7 +155,7 @@ public class App implements MqttCallback{
                     if(sessionId.equals(""))
                         System.out.println("Que faire ? 1: Authentification, 2: Register");
                     else
-                        System.out.println("Que faire ? 1: Deconnexion");
+                        System.out.println("Que faire ? 1: Deconnexion, 2: Faire un QCM");
 
                     do{
                         choice = Integer.parseInt(scan.nextLine());
@@ -114,7 +169,10 @@ public class App implements MqttCallback{
                                 disconnection();
                             break;
                         case 2:
-                            register();
+                            if(sessionId.equals(""))
+                                register();
+                            else 
+                                startMCQ();
                             break;
                     }
                 }
@@ -154,6 +212,21 @@ public class App implements MqttCallback{
                 System.out.println("Problème de déconnexion côté serveur. Déconnexion forcée.");
                 connected = false;
             }
+        }
+
+        if (answer.getString("status").equals("MCQ_DATA")){
+            rs.waiting = false;
+            currentMCQ = answer.getJSONObject("questions");
+            System.out.println("QCM reçu : "+ answer.getString("qcmId"));
+            afficherQuestions(currentMCQ);
+            sendAllAnswers();
+            return;
+        }
+
+        if (answer.getString("status").equals("SCORE_RESULT")){
+            rs.waiting = false;
+            System.out.println("Votre score : " + answer.getInt("score") + "/" +answer.getInt("total"));
+            return;
         }
     }
     @Override
