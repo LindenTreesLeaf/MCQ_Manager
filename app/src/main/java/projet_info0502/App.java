@@ -27,7 +27,7 @@ public class App implements MqttCallback{
     private static volatile boolean connected = true;
 
     private static JSONObject currentMCQ = null;
-    private static String currentQcmId = null;
+    private static String currentMCQId = null;
 
     public static void authenticate(){
         try {
@@ -88,12 +88,13 @@ public class App implements MqttCallback{
         try{
             System.out.print("Entrer l'ID du QCM (ex: mcq1) : ");
             String qcmId = scan.nextLine();
-            currentQcmId = qcmId;
-            JSONObject req = new JSONObject().put("service", "MCQ").put("action", "START").put("sessionId", sessionId).put("qcmId", qcmId);
-            MqttMessage message = new MqttMessage(req.toString().getBytes());
+            currentMCQId = qcmId;
+
+            JSONObject request = new JSONObject().put("service", "MCQ").put("params", new JSONObject().put("action", "START").put("MCQId", qcmId).put("topic", TOPIC_CLIENT).put("sessionId", sessionId));
+            MqttMessage message = new MqttMessage(request.toString().getBytes());
             client.publish(TOPIC_MCQMANAGER, message); 
             
-            rs = new RequestedService("MCQ_START", true);
+            rs.service = "MCQ_START"; rs.waiting = true;
         } catch (Exception e){
             e.printStackTrace();
         }
@@ -111,6 +112,8 @@ public class App implements MqttCallback{
             }
             System.out.println();
         }
+
+        rs.waiting = false;
     }
 
     public static void sendAllAnswers() {
@@ -121,7 +124,7 @@ public class App implements MqttCallback{
                 int rep = Integer.parseInt(scan.nextLine());
                 answers.put(key, rep);
             }
-            JSONObject req = new JSONObject().put("service", "MCQ").put("action", "ANSWER_ALL").put("sessionId", sessionId).put("qcmId", currentQcmId).put("answers", answers);
+            JSONObject req = new JSONObject().put("service", "MCQ").put("action", "ANSWER_ALL").put("sessionId", sessionId).put("qcmId", currentMCQId).put("answers", answers);
             MqttMessage message =  new MqttMessage(req.toString().getBytes());
             client.publish(TOPIC_MCQMANAGER, message);
             
@@ -155,11 +158,11 @@ public class App implements MqttCallback{
                     if(sessionId.equals(""))
                         System.out.println("Que faire ? 1: Authentification, 2: Register");
                     else
-                        System.out.println("Que faire ? 1: Deconnexion, 2: Faire un QCM");
+                        System.out.println("Que faire ? 1: Deconnexion, 2: Faire un QCM, 3: Demander les scores");
 
                     do{
                         choice = Integer.parseInt(scan.nextLine());
-                    }while(((sessionId.equals("")) && (choice < 0 || choice > 2)) || (!sessionId.equals("") && (choice < 0 || choice > 1)));
+                    }while(((sessionId.equals("")) && (choice < 0 || choice > 2)) || (!sessionId.equals("") && (choice < 0 || choice > 3)));
 
                     switch(choice){
                         case 1:
@@ -173,6 +176,8 @@ public class App implements MqttCallback{
                                 register();
                             else 
                                 startMCQ();
+                            break;
+                        case 3:
                             break;
                     }
                 }
@@ -214,19 +219,15 @@ public class App implements MqttCallback{
             }
         }
 
-        if (answer.getString("status").equals("MCQ_DATA")){
-            rs.waiting = false;
-            currentMCQ = answer.getJSONObject("questions");
-            System.out.println("QCM reçu : "+ answer.getString("qcmId"));
+        if(rs.service.equals("MCQ_START") && rs.waiting == true){
+            currentMCQ = answer.getJSONObject("params").getJSONObject("MCQ");
             afficherQuestions(currentMCQ);
             sendAllAnswers();
-            return;
         }
 
-        if (answer.getString("status").equals("SCORE_RESULT")){
+        if(answer.getString("status").equals("SCORE_RESULT")){
             rs.waiting = false;
             System.out.println("Votre score : " + answer.getInt("score") + "/" +answer.getInt("total"));
-            return;
         }
     }
     @Override
