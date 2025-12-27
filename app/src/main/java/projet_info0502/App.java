@@ -100,43 +100,39 @@ public class App implements MqttCallback{
         }
     }
 
-    public static void afficherQuestions(JSONObject questions) {
-        for (String key : questions.keySet()) {
-            JSONObject q = questions.getJSONObject(key);
-            System.out.println("Question " + key + ": " + q.getString("question"));
-
-            JSONArray props = q.getJSONArray("propositions");
-            for (int i = 0; i < props.length(); i++) {
-                JSONArray p = props.getJSONArray(i);
-                System.out.println("  " + (i+1) + ". " + p.getString(0));
-            }
-            System.out.println();
-        }
-
-        rs.waiting = false;
-    }
-
-    public static void sendAllAnswers() {
+    public static void manageQuestions(JSONObject questions) {
+        JSONObject answers = new JSONObject();
+        
         try {
-            JSONObject answers = new JSONObject();
-            for (String key : currentMCQ.keySet()){
-                System.out.print("Réponse à la question " + key + " : ");
-                int rep = Integer.parseInt(scan.nextLine());
-                answers.put(key, rep);
+            for(int i = 1; i <= 20; i++){
+                System.out.println("Question " + i + " : " + questions.getString(Integer.toString(i)) + "\n0. " + questions.getJSONArray("propositions").get(0) + " ; 1. " + questions.getJSONArray("propositions").get(1) + " ; 2. " + questions.getJSONArray("propositions").get(2));
+                int choice;
+                do{
+                    System.out.print("Choix : ");
+                    choice = Integer.parseInt(scan.nextLine());
+                } while(choice < 0 || choice > 2);
+                answers.put(Integer.toString(i), choice);
             }
-            JSONObject req = new JSONObject().put("service", "MCQ").put("action", "ANSWER_ALL").put("sessionId", sessionId).put("qcmId", currentMCQId).put("answers", answers);
-            MqttMessage message =  new MqttMessage(req.toString().getBytes());
+
+            JSONObject request = new JSONObject().put("service", "MCQ").put("params", new JSONObject().put("action", "ANSWER_ALL").put("MCQId", currentMCQId).put("topic", TOPIC_CLIENT).put("sessionId", sessionId).put("answers", answers));
+            MqttMessage message = new MqttMessage(request.toString().getBytes());
             client.publish(TOPIC_MCQMANAGER, message);
-            
-            rs = new RequestedService("SCORE", true);
-        } catch (Exception e){
+            rs.service = "MCQ_RESULT"; rs.waiting = true;
+        } catch (MqttException e) {
             e.printStackTrace();
         }
-
     }
 
-
-
+    public static void requestScores(){
+        try{
+            JSONObject request = new JSONObject().put("service", "Scores").put("params", new JSONObject().put("topic", TOPIC_CLIENT).put("sessionId", sessionId));
+            MqttMessage message = new MqttMessage(request.toString().getBytes());
+            client.publish(TOPIC_MCQMANAGER, message);
+            rs.service = "Scores"; rs.waiting = true;
+        } catch(MqttException e){
+            e.printStackTrace();
+        }
+    }
 
     public static void main(String[] args) {
         if(args.length == 1)
@@ -221,13 +217,21 @@ public class App implements MqttCallback{
 
         if(rs.service.equals("MCQ_START") && rs.waiting == true){
             currentMCQ = answer.getJSONObject("params").getJSONObject("MCQ");
-            afficherQuestions(currentMCQ);
-            sendAllAnswers();
+            manageQuestions(currentMCQ);
         }
 
-        if(answer.getString("status").equals("SCORE_RESULT")){
+        if(rs.service.equals("MCQ_RESULT") && rs.waiting == true){
+            System.out.println("Score : " + answer.getInt("score") + "/20");
             rs.waiting = false;
-            System.out.println("Votre score : " + answer.getInt("score") + "/" +answer.getInt("total"));
+        }
+
+        if(rs.service.equals("Scores") && rs.waiting == true){
+            JSONArray scores = answer.getJSONObject("params").getJSONArray("scores");
+            for(int i = 0; i < scores.length(); i++){
+                JSONArray data = (JSONArray)(scores.get(i));
+                System.out.println("QCM " + data.getString(0) + " : " + data.getInt(1) + "/20");
+            }
+            rs.waiting = false;
         }
     }
     @Override
