@@ -227,7 +227,7 @@ public class App implements MqttCallback{
 
         if(answer.getString("status").equals("SCORE_RESULT")){
             rs.waiting = false;
-            System.out.println("Votre score : " + answer.getInt("score") + "/" +answer.getInt("total"));
+            System.out.println("Votre score : " + answer.getInt("score") + "/" + answer.getInt("total"));
         }
     }
     @Override
