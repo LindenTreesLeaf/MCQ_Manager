@@ -15,6 +15,8 @@ import projet_info0502.Threads.AuthentificationThrd;
 import projet_info0502.Threads.DisconnectionThrd;
 import projet_info0502.Threads.RegisterThrd;
 import projet_info0502.Users.ServerManager;
+import projet_info0502.Threads.MCQThrd;
+import projet_info0502.Threads.ScoreThrd;
 
 public class App implements MqttCallback{
     private static MqttClient client;
@@ -57,6 +59,14 @@ public class App implements MqttCallback{
             case "Disconnection":
                 Thread discThrd = new Thread(new DisconnectionThrd(client, request, sm));
                 discThrd.start();
+                break;
+            case "MCQ":
+                Thread mcqThrd = new Thread(new MCQThrd(client, request));
+                mcqThrd.start();
+                break;
+            case "Score":
+                Thread scoreThrd = new Thread(new ScoreThrd(client, request));
+                scoreThrd.start();
                 break;
             default:
                 JSONObject answer = new JSONObject().put("status", "KO").put("error", "Service requested not recognised. Service requested: " + request.getString("service") + "; allowed services: \"Authentification\", \"Register\", \"Disconnection\"");
