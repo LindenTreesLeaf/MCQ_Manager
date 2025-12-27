@@ -12,7 +12,6 @@ import projet_info0502.Users.User;
 
 import org.json.JSONObject;
 
-
 public class MCQThrd implements Runnable{
     private ServerManager sm;
     private MqttClient client;
@@ -67,7 +66,7 @@ public class MCQThrd implements Runnable{
                 answer.put("status", "KO").put("error", "MCQ not found. ID given: " + this.MCQId);
             }
             else{
-                JSONObject mcq = DBManager.getMCQ(this.MCQId);
+                JSONObject mcq = DBManager.getQuestions(this.MCQId);
                 answer.put("status", "OK").put("params", new JSONObject().put("MCQ", mcq));
             }
 
@@ -87,7 +86,7 @@ public class MCQThrd implements Runnable{
             int res = DBManager.correctMCQ(this.MCQId, answers);
 
             JSONObject answer = new JSONObject();
-            answer.put("status", "OK").put("params", new JSONObject().put("result", res));
+            answer.put("status", "OK").put("params", new JSONObject().put("score", res));
             String messageText = answer.toString();
             MqttMessage message = new MqttMessage(messageText.getBytes());
             this.client.publish(TOPIC, message);

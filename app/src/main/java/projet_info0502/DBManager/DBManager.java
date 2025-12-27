@@ -46,6 +46,23 @@ public class DBManager {
         reader.close();
         return mcq.getJSONObject(id);
     }
+    public static JSONObject getQuestions(String id){
+        JSONObject questions = new JSONObject();
+        try {
+            JSONObject mcq = getMCQ(id);
+            for(String key: mcq.keySet()){
+                JSONArray propositions = new JSONArray();
+                for(int i = 0; i < 3; i++){
+                    JSONArray p = (JSONArray)(mcq.getJSONArray("propositions").get(i));
+                    propositions.put((String)(p.get(0)));
+                }
+                questions.put(key, new JSONObject().put("question", mcq.getJSONObject(key).getString("question")).put("propositions", propositions));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return questions;
+    }
     public static int correctMCQ(String MCQId, JSONObject answers) throws IOException{
         if(MCQExists(MCQId)){
             JSONObject mcq = getMCQ(MCQId);
@@ -60,7 +77,7 @@ public class DBManager {
 
             return res;
         } else
-            throw new MCQManagerException("");
+            throw new MCQManagerException("Trying to correct a non existing MCQ. MCQ ID provided: " + MCQId);
     }
 
     public static String generateSessionId() {
