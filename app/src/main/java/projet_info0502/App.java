@@ -28,12 +28,23 @@ public class App implements MqttCallback{
 
     private static String currentMCQId = null;
 
+    private static volatile boolean testing = false;
+
     public static void authenticate(){
         try {
-            System.out.print("Authentification :\nEntrer nickname : ");
-            String nick = scan.nextLine();
-            System.out.print("Entrer password : ");
-            String password = scan.nextLine();
+            String nick;
+            String password;
+            if(!testing){
+                System.out.print("Authentification :\nEntrer nickname : ");
+                nick = scan.nextLine();
+                System.out.print("Entrer password : ");
+                password = scan.nextLine();
+            } else{
+                System.out.println("Authentification :\nEntrer nickname : user_test");
+                nick = "user_test";
+                System.out.print("Entrer password : ");
+                password = "1234";
+            }
 
             JSONObject request = new JSONObject().put("service", "Authentification").put("params", new JSONObject().put("topic", TOPIC_CLIENT).put("nick", nick).put("password", password));
             
@@ -85,8 +96,14 @@ public class App implements MqttCallback{
 
     public static void startMCQ(){
         try{
-            System.out.print("Entrer l'ID du QCM (ex: mcq1) : ");
-            String qcmId = scan.nextLine();
+            String qcmId;
+            if(!testing){
+                System.out.print("Entrer l'ID du QCM (ex: mcq1) : ");
+                qcmId = scan.nextLine();
+            } else {
+                System.out.print("Entrer l'ID du QCM (ex: mcq1) : ");
+                qcmId = "mcq1";
+            }
             currentMCQId = qcmId;
 
             JSONObject request = new JSONObject().put("service", "MCQ").put("params", new JSONObject().put("action", "START").put("MCQId", qcmId).put("topic", TOPIC_CLIENT).put("sessionId", sessionId));
@@ -104,22 +121,26 @@ public class App implements MqttCallback{
 
         try {
             for(int i = 1; i <= 20; i++){
-		JSONObject q = questions.getJSONObject(Integer.toString(i));
+		        JSONObject q = questions.getJSONObject(Integer.toString(i));
                 System.out.println("Question " + i + " : " + q.getString("question") + "\n0. " + q.getJSONArray("propositions").get(0) + " ; 1. " + q.getJSONArray("propositions").get(1) + " ; 2. " + q.getJSONArray("propositions").get(2));
                 int choice;
-                do{
-                    System.out.print("Choix : ");
-                    choice = Integer.parseInt(scan.nextLine());
-                } while(choice < 0 || choice > 2);
+                if(!testing){
+                    do{
+                        System.out.print("Choix : ");
+                        choice = Integer.parseInt(scan.nextLine());
+                    } while(choice < 0 || choice > 2);
+                } else{
+                    choice = (int)(Math.random() * 3);
+                }
                 answers.put(Integer.toString(i), choice);
-		System.out.println("");
+		        System.out.println("");
             }
 
             JSONObject request = new JSONObject().put("service", "MCQ").put("params", new JSONObject().put("action", "ANSWER_ALL").put("MCQId", currentMCQId).put("topic", TOPIC_CLIENT).put("sessionId", sessionId).put("answers", answers));
             MqttMessage message = new MqttMessage(request.toString().getBytes());
             client.publish(TOPIC_MCQMANAGER, message);
             rs.service = "MCQ_RESULT"; rs.waiting = true;
-	    System.out.println("Réponses envoyées au serveur.");
+	        System.out.println("Réponses envoyées au serveur.");
         } catch (MqttException e) {
             e.printStackTrace();
         } catch (Exception e){
@@ -158,13 +179,13 @@ public class App implements MqttCallback{
             while(connected){
                 if(!rs.waiting){
                     if(sessionId.equals(""))
-                        System.out.println("Que faire ? 1: Authentification, 2: Register");
+                        System.out.println("Que faire ? 1: Authentification, 2: Register, 3: Test");
                     else
                         System.out.println("Que faire ? 1: Deconnexion, 2: Faire un QCM, 3: Demander les scores");
 
                     do{
                         choice = Integer.parseInt(scan.nextLine());
-                    }while(((sessionId.equals("")) && (choice < 0 || choice > 2)) || (!sessionId.equals("") && (choice < 0 || choice > 3)));
+                    }while(((sessionId.equals("")) && (choice < 0 || choice > 3)) || (!sessionId.equals("") && (choice < 0 || choice > 3)));
 
                     switch(choice){
                         case 1:
@@ -180,7 +201,12 @@ public class App implements MqttCallback{
                                 startMCQ();
                             break;
                         case 3:
-			    requestScores();
+                            if(sessionId.equals("")){
+                                testing = true;
+                                authenticate();
+                            }
+                            else
+                                requestScores();
                             break;
                     }
                 }
@@ -204,7 +230,11 @@ public class App implements MqttCallback{
                 JSONObject params = answer.getJSONObject("params");
                 sessionId = params.getString("sessionId");
                 System.out.println("Authentification et/ou Registeration réussie. ID de session : " + sessionId);
-                rs.service = ""; rs.waiting = false;
+                if(!testing){
+                    rs.service = ""; rs.waiting = false;
+                }
+                else
+                    new Thread(() -> startMCQ()).start();
             }else{
                 System.out.println("Authentification et/ou Registration échoué.");
                 rs.service = ""; rs.waiting = false;
@@ -228,11 +258,13 @@ public class App implements MqttCallback{
         }
 
         if(rs.service.equals("MCQ_RESULT") && rs.waiting == true){
-	    try{
+            try{
                 System.out.println("Score : " + answer.getJSONObject("params").getInt("score") + "/20");
-	    } catch(Exception e){
-		e.printStackTrace();
-	    }
+                if(testing)
+                    new Thread(() -> requestScores()).start();
+            } catch(Exception e){
+                e.printStackTrace();
+            }
             rs.waiting = false;
         }
 
@@ -242,6 +274,8 @@ public class App implements MqttCallback{
                 JSONArray data = (JSONArray)(scores.get(i));
                 System.out.println("QCM " + data.getString(0) + " : " + data.getInt(1) + "/20");
             }
+            if(testing)
+                testing = false;
             rs.waiting = false;
         }
     }
