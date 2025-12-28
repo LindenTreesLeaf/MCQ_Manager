@@ -42,7 +42,7 @@ public class App implements MqttCallback{
             } else{
                 System.out.println("Authentification :\nEntrer nickname : user_test");
                 nick = "user_test";
-                System.out.print("Entrer password : ");
+                System.out.println("Entrer password : 1234");
                 password = "1234";
             }
 
@@ -101,7 +101,7 @@ public class App implements MqttCallback{
                 System.out.print("Entrer l'ID du QCM (ex: mcq1) : ");
                 qcmId = scan.nextLine();
             } else {
-                System.out.print("Entrer l'ID du QCM (ex: mcq1) : ");
+                System.out.print("Entrer l'ID du QCM (ex: mcq1) : mcq1");
                 qcmId = "mcq1";
             }
             currentMCQId = qcmId;
@@ -131,6 +131,7 @@ public class App implements MqttCallback{
                     } while(choice < 0 || choice > 2);
                 } else{
                     choice = (int)(Math.random() * 3);
+		    System.out.println("Choix : " + choice);
                 }
                 answers.put(Integer.toString(i), choice);
 		        System.out.println("");
@@ -185,7 +186,7 @@ public class App implements MqttCallback{
 
                     do{
                         choice = Integer.parseInt(scan.nextLine());
-                    }while(((sessionId.equals("")) && (choice < 0 || choice > 3)) || (!sessionId.equals("") && (choice < 0 || choice > 3)));
+                    }while(choice < 0 || choice > 3);
 
                     switch(choice){
                         case 1:
@@ -265,7 +266,8 @@ public class App implements MqttCallback{
             } catch(Exception e){
                 e.printStackTrace();
             }
-            rs.waiting = false;
+	    if(!testing)
+            	rs.waiting = false;
         }
 
         if(rs.service.equals("Scores") && rs.waiting == true){
@@ -275,8 +277,9 @@ public class App implements MqttCallback{
                 System.out.println("QCM " + data.getString(0) + " : " + data.getInt(1) + "/20");
             }
             if(testing)
-                testing = false;
-            rs.waiting = false;
+                new Thread(() -> disconnection()).start();
+            else
+	    	rs.waiting = false;
         }
     }
     @Override
