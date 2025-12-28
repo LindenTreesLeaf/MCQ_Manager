@@ -90,6 +90,7 @@ public class MCQThrd implements Runnable{
             String messageText = answer.toString();
             MqttMessage message = new MqttMessage(messageText.getBytes());
             this.client.publish(TOPIC, message);
+	    System.out.println("DEBUG: " + answer);
         } catch (MqttException e) {
             e.printStackTrace();
         } catch (IOException e){

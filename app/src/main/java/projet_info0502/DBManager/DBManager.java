@@ -53,7 +53,7 @@ public class DBManager {
             for(String key: mcq.keySet()){
                 JSONArray propositions = new JSONArray();
                 for(int i = 0; i < 3; i++){
-                    JSONArray p = (JSONArray)(mcq.getJSONArray("propositions").get(i));
+                    JSONArray p = (JSONArray)(mcq.getJSONObject(key).getJSONArray("propositions").get(i));
                     propositions.put((String)(p.get(0)));
                 }
                 questions.put(key, new JSONObject().put("question", mcq.getJSONObject(key).getString("question")).put("propositions", propositions));
