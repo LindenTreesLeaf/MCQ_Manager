@@ -63,7 +63,7 @@ public class DBManager {
         }
         return questions;
     }
-    public static int correctMCQ(String MCQId, JSONObject answers) throws IOException{
+    public static int correctMCQ(User u, String MCQId, JSONObject answers) throws IOException{
         if(MCQExists(MCQId)){
             JSONObject mcq = getMCQ(MCQId);
 
@@ -74,6 +74,21 @@ public class DBManager {
                 if((boolean)(choice.get(1)) == true)
                     res++;
             }
+
+            JSONObject uJSON = getUserJson(u);
+            uJSON.getJSONArray("scores").put(new JSONArray().put(MCQId).put(res));
+
+            BufferedReader reader = Files.newBufferedReader(PATH_USERS, StandardCharsets.UTF_8);
+            String line = reader.readLine();
+            JSONObject users = new JSONObject(line);
+            users.put(u.getNick(), uJSON);
+
+            BufferedWriter writer = Files.newBufferedWriter(PATH_USERS, StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            writer.write(users.toString());
+            writer.newLine();
+
+            writer.close();
+            reader.close();
 
             return res;
         } else

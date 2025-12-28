@@ -20,6 +20,8 @@ public class MCQThrd implements Runnable{
     private String TOPIC;
     private String MCQId;
 
+    private User u;
+
     public MCQThrd(MqttClient client, JSONObject request, ServerManager s){
         this.client = client;
         this.request = request;
@@ -32,7 +34,7 @@ public class MCQThrd implements Runnable{
     public void run(){
         try{
             JSONObject params = this.request.getJSONObject("params");
-            User u = sm.checkAuth(params.getString("sessionId"));
+            this.u = sm.checkAuth(params.getString("sessionId"));
 
             String action = params.getString("action");
 
@@ -83,14 +85,13 @@ public class MCQThrd implements Runnable{
     private void handleAnswerAll(){
         try {
             JSONObject answers = request.getJSONObject("params").getJSONObject("answers");
-            int res = DBManager.correctMCQ(this.MCQId, answers);
+            int res = DBManager.correctMCQ(this.u, this.MCQId, answers);
 
             JSONObject answer = new JSONObject();
             answer.put("status", "OK").put("params", new JSONObject().put("score", res));
             String messageText = answer.toString();
             MqttMessage message = new MqttMessage(messageText.getBytes());
             this.client.publish(TOPIC, message);
-	    System.out.println("DEBUG: " + answer);
         } catch (MqttException e) {
             e.printStackTrace();
         } catch (IOException e){
