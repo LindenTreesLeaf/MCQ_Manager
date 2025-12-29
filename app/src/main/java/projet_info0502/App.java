@@ -76,9 +76,6 @@ public class App implements MqttCallback{
                 client.publish(TOPIC, m);
                 break;
         }
-        //debug -- a supprimer
-        Thread.sleep(2500);
-        System.out.println(sm);
     }
     @Override
     public void connectionLost(Throwable cause){}
