@@ -27,3 +27,7 @@ cd client
 ./gradlew build
 ./graldew app:run --args="tcp://[adresse IP et port d'un broker MQTT]" --console=plain
 ```
+## Licence
+Ce projet a été réalisé en collaboration avec _OYANI Muzhgan_
+
+Le code est mis à disposition pour __consultation et test local uniquement__. Toute reproduction ou utilisation commerciale est interdite sans notre accord préalable. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
